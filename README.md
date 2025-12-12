@@ -78,7 +78,7 @@ Each entry $e \in \mathcal{KB}$ is a structured tuple $e = \langle s, g, \phi \r
 
 - **Guidance** ($g$): Five-component structured content
 
-- **Embedding** ($\phi(s)$): Dense vector representation for retrieval
+- **Embedding** (φ(s)): Dense vector representation for retrieval
 
 ### Three-Stage Learning Framework
 
