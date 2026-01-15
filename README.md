@@ -214,7 +214,6 @@ def judge_reward_fn(question, answer1, answer2, standard_answer):
 ## 📂 Project Structure
 - `mnl/`: Core framework implementation (Tuner, Memory, Knowledge Base).
 - `examples/`: Task-specific scripts for SQL, Web Agent, etc.
-- `papers/`: LaTeX source, figures, and full text of the MNL paper.
 - `resources/`: Dataset files and database schemas.
 
 ---
