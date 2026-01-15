@@ -1,166 +1,227 @@
-# Mistake Notebook Learning (MNL): Selective Batch-Wise Context Optimization for In-Context Learning
+# Mistake Notebook Learning (MNL): Batch-Clustered Failures for Training-Free Agent Adaptation
 
-A training-free framework for improving Large Language Model (LLM) reasoning capabilities through structured error abstraction, batch-wise knowledge accumulation, and selective validation mechanisms.
-
-## Abstract
-
-Large language models adapt via gradient-based fine-tuning (costly) or in-context learning (unstable). We introduce **Mistake Notebook Learning (MNL)**, a training-free framework that bridges this gap. MNL maintains a dynamic knowledge base of error patterns extracted from **batch-wise analysis** of multiple related failures, producing generalizable subject-level guidance. Unlike memory-based methods prone to instance-level noise, MNL uses structured knowledge representation and a selective validation mechanism to ensure robust and monotonic improvement.![](./Figure/fig1-flow.jpg)
-
-*Figure 1: Overview of Mistake Notebook Learning framework*
-
-## Performance Highlights
-
-![](./Figure/fig2-kaggle_comparison.jpg)
-
-*Figure 2: Performance on KaggleDBQA. MNL achieves 47%, 32%, and 15% relative improvements for Qwen3-8B, DeepSeekV3.2, and Qwen3-Max.*
-
-![](./Figure/fig3-comparison_chart-v2.png)
-
-*Figure 3: Cost-accuracy trade-off. MNL achieves competitive performance with significantly lower computational cost compared to SFT and other training-free methods.*
-
-**Key Results:**
-
-- **GSM8K**: MNL (93.9%) nearly matches SFT (94.3%) without any parameter updates
-
-- **KaggleDBQA**: 47% relative improvement with Qwen3-8B, establishing MNL as a practical alternative to gradient-based adaptation
-
-- **Cost Efficiency**: On GSM8K, MNL achieves 93.9% accuracy at only \$1.20 learning cost (40% less than SFT's \$1.99)
-
---- 
-
-## Introduction
-
-### Motivation
-
-Current training-free adaptation methods for LLMs face two critical limitations:
-
-**Problem 1: Instance-Level Noise**
-
-- Single-case retrieval overfits to details.
-
-![](./Figure/fig4-overfit.png)
-
-*Figure 4: Example of instance-level noise leading to incorrect answers*
-
-**Problem 2: Unconditional Iterative Updates**
-
-- Greedy integration of all generated feedback leads to memory saturation with low-utility content
-
-### Our Approach
-
-MNL addresses these limitations through:
-
-1. **Batch-wise Error Abstraction**: Analyze multiple related failures to extract generalizable patterns
-
-2. **Structured Knowledge Representation**: Five-component format with explicit anti-patterns
-
-3. **Selective Validation**: Empirical hold-out evaluation before knowledge base updates
-
-4. **Subject-Level Clustering**: Dynamic subject classification for targeted guidance
+Mistake Notebook Learning (MNL) is a novel, training-free memory framework that enables Large Language Model (LLM) agents to systematically learn from their mistakes. Instead of updating model weights, MNL distills shared error patterns from batch-clustered failures into structured "mistake notes." These notes are stored in an external memory and retrieved at test time to steer agents away from known pitfalls, enabling continuous improvement with minimal computational overhead.
 
 ---
 
-## Method Overview
+## 🚀 Key Features
+- **Training-Free Adaptation**: No gradient updates or parameter tuning required.
+- **Batch-Clustered Abstraction**: Groups errors by subject to distill generalized, stable guidance.
+- **Conservative Evolution**: Uses an "accept-if-improves" rule to ensure memory updates only enhance performance.
+- **Cross-Domain Versatility**: Validated on Mathematical Reasoning (AIME, GSM8K), Text-to-SQL (KaggleDBQA, Spider), and Interactive Agents (Mind2Web, AppWorld).
+- **Efficiency**: Compact memory structure and short inference-time prompts compared to retrieval-heavy baselines.
 
-### Problem Formulation
+---
 
-We formalize the context optimization problem as constructing an optimal knowledge base $\mathcal{KB}$ and retrieving appropriate knowledge to maximize the expected reward of an LLM policy $\pi_\theta$ with frozen parameters $\theta$.
+## 🧠 Methodology
 
-**Objective:**
+MNL operates through a closed-loop iterative process involving two roles: the **Tuning Model** (the agent being improved) and the **Tuner Model** (the supervisor analyzing errors).
 
-$$\mathcal{KB}^* = \arg\max_{\mathcal{KB}} \mathbb{E}_{(x,y) \sim \mathcal{D}} \left[ R\left(\pi_\theta(P(x, \mathcal{KB})), y\right) \right]$$
+### 1. The MNL Evolution Protocol
+1.  **Baseline Generation**: The Tuning Model generates initial responses for a batch of queries, augmented by existing memory context.
+2.  **Memory Update**:
+    - **Failure Identification**: Failed trajectories are identified using ground truth (Supervised) or an LLM judge (Self-Evolution).
+    - **Subject Clustering**: Failures are grouped into semantic subjects (e.g., "SQL: Join conditions on null values").
+    - **Guidance Distillation**: The Tuner Model extracts structured insights (Correct Approach, Mistake Summary, Generalizable Strategy, and Anti-Patterns) from each cluster.
+    - **Memory Fusion**: New insights are merged with existing entries or appended as new nodes.
+3.  **Post-Update Evaluation**: The batch is re-evaluated with the updated memory. The update is **accepted** only if net batch performance improves.
 
-**Knowledge Base Entry Structure:**
+### 2. Learning Regimes
+- **Supervised Evolution**: Uses ground-truth labels for feedback (e.g., Math, SQL).
+- **Self-Evolution**: Uses a proxy verifier (LLM Judge) for feedback (e.g., web navigation, API interaction).
 
-Each entry $e \in \mathcal{KB}$ is a structured tuple $e = \langle s, g, \phi \rangle$ comprising:
+---
 
-- **Subject** ($s$): Semantic topic identifier
+## 📊 Performance Results
 
-- **Guidance** ($g$): Five-component structured content
+MNL achieves competitive results across multiple benchmarks while maintaining a significantly smaller memory footprint than alternative methods:
 
-- **Embedding** (φ(s)): Dense vector representation for retrieval
-
-### Three-Stage Learning Framework
-
-1. **Baseline Generation**: Answer questions using current knowledge base.
-
-2. **Update & Regeneration**: Cluster errors by subject, synthesize new guidance from batch patterns, generate new answers.
-
-3. **Evaluation & Commit**: Compare new vs. old answers; update notebook only if batch performance improves.
-
-## Results
-
-### Tasks and Datasets:
-
-- **Mathematical Reasoning:**
-  - **AIME 2024/2025:** Competition-level problems (small-data regime, 100 training examples from DAPO and 30 test examples per year).
-  - **GSM8K:** Grade-school math problems (large-scale, 7,473 training examples).
-- **Text-to-SQL:**
-  - **Spider:** Cross-domain complex SQL generation (large-scale, 7,000 training examples and 1,319 test examples).
-  - **KaggleDBQA:** Real-world database QA (small-data regime, 87 training and 185 test examples).
-
-#### Main Results
-
-**1. Mathematical Reasoning Performance**
-| Dataset | Model | Base | TFGO | **MNL (Ours)** |
-| :--- | :--- | :--- | :--- | :--- |
-| **AIME 2024** | Qwen3-8B | <u>0.30</u> | 0.23 | **0.33** |
-| | DeepSeekV3.2 | 0.87 | **0.93** | <u>0.90</u> |
-| | Qwen3-Max | **0.93** | 0.90 | **0.93** |
-| **AIME 2025** | Qwen3-8B | <u>0.23</u> | <u>0.23</u> | **0.30** |
-| | DeepSeekV3.2 | 0.80 | **0.90** | <u>0.83 </u>|
-| | Qwen3-Max | **0.96** | 0.90 | **0.96** |
-| **GSM8K** | Qwen3-8B | <u>0.918</u> | 0.912 | **0.939** |
-
-*Table 1: Results on Mathematical Reasoning Tasks (Pass@32). Best in **bold**, second underlined.*
-
-**Key Findings (Math):**
-
-- MNL gives a **30% relative improvement** for Qwen3-8B on AIME 2025 (23% → 30%).
-- For top models like Qwen3-Max (96%), MNL **maintains peak performance** without regression.
-- On **GSM8K**, MNL achieves **93.9%**, showing strong large-scale reasoning.
-
-**2. Text-to-SQL Performance**
-| Dataset | Model | Base | Memento | TFGO | **MNL (Ours)** |
+| Task | Benchmark | Metric | Vanilla | MNL | Gain |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **KaggleDBQA** | Qwen3-8B | 0.190 | 0.151 | <u>0.221</u> | **0.280** |
-| | DeepSeekV3.2 | 0.238 | 0.194 | <u>0.243</u> | **0.314** |
-| | Qwen3-Max | 0.400 | <u>0.470</u> | **0.475** | 0.459 |
-| **Spider** | Qwen3-8B | 0.689 | 0.673 | <u>0.701</u> | **0.717** |
+| **Math** | AIME 2024 | Pass@32 | 30.0% | **33.0%** | +3.0% |
+| **Text-to-SQL** | KaggleDBQA | EA (%) | 19.0% | **28.0%** | +9.0% |
+| **Web Agent** | Mind2Web | Step Acc (%)| 11.5% | **15.6%** | +4.1% |
+| **Tool Agent** | AppWorld | Task Success | 12.5% | **14.3%** | +1.8% |
 
-*Table 2: Results on Text-to-SQL Tasks (Execution Accuracy, Pass@1). Best in **bold**, second underlined.*
+*Results based on Qwen3-8B. MNL also demonstrates strong compatibility with test-time scaling (TTS) and think-enabled models.*
 
-**Key Findings (Text-to-SQL):**
+---
 
-- On **KaggleDBQA**, MNL brings **47% relative improvement** for Qwen3-8B (19.0% → 28.0%).
-- On **Spider**, MNL raises Qwen3-8B to **71.7%**, leading all training-free baselines.
+## 🛠 Usage Examples
 
-### Comparison with Supervised Fine-Tuning (SFT)
+MNL provides a `PromptTuner` class to manage the evolution process. Below are examples of how to initialize and run tuning for different tasks.
+### 0. Environment Setup
+Before running the examples, create a `.env` file in the root directory and configure your API keys and endpoints:
 
-![](./Figure/fig5-sft_comparison.jpg)
+```bash
+# API Configuration
+# Support multiple endpoints separated by comma for parallel processing
 
-*Figure 5:MNL vs.\ SFT on Qwen3-8B. On GSM8K, MNL (93.9\%) nearly matches SFT (94.3\%). On Spider, SFT (79.0\%) leads, but MNL (71.7\%) significantly improves over base (68.9\%) without parameter updates.*
+# Tuning Model API Configuration
+TUNING_BASE_URLS="http://localhost:8814/v1,http://localhost:8815/v1"
+TUNING_MODEL_NAME="Qwen3-8b"
+TUNING_MODEL_API_KEYS="EMPTY"
 
-A central finding is that MNL's systematic context curation can rival gradient-based adaptation, see figure 5. We compare against full-parameter SFT on Qwen3-8B:
+# Tuner Model API Configuration  
+TUNER_BASE_URLS="http://localhost:8814/v1,http://localhost:8815/v1"
+TUNER_MODEL_NAME="Qwen3-8b"
+TUNER_MODEL_API_KEYS="EMPTY"
 
-- **GSM8K:** MNL (**93.9%**) nearly matches SFT (**94.3%**), only 0.4 points behind.
-- **Spider:** SFT leads (**79.0%**), but MNL (**71.7%**) significantly improves over the vanilla model (**68.9%**) **without parameter updates**.
+# Knowledge Base Path
+KNOWLEDGE_BASE_PATH="./knowledge_base.jsonl"
 
-### Cost-Effectiveness Analysis
+# Embedding Model API Configuration
+EMBEDDING_BASE_URL = "http://127.0.0.1:10013/v1/"
+EMBEDDING_MODEL_NAME = "bge-m3"
+EMBEDDING_API_KEY = "EMPTY"
 
-MNL delivers high performance per cost (see Figure 2):
 
-- **KaggleDBQA (Qwen3-Max):** MNL reaches **0.459 accuracy at only $0.19**.
+```
 
-- **vs. SFT on Qwen3-8B:**
-  
-  - **GSM8K:** MNL (93.9%, $0.99) closes most of the gap to SFT (94.3%, \$1.98), **cutting cost by ~50%**.
-  
-  - **Spider:** MNL (71.7%, $1.98) gives major gains, while SFT (79.0%, \$3.32) is more costly.
+### 1. Text-to-SQL Optimization (`examples/example_dbqa.py`)
+```python
+from mnl import PromptTuner
+from examples.utils.rewards import create_sql_reward_fn
+from examples.utils.api_utils import create_model_batch_fn
 
-**Conclusion:** MNL gives **competitive performance** across tasks, offers **major cost savings** over gradient methods, and works well in **self-tuning mode**, making it a versatile and efficient LLM adaptation approach.
+# 1. Define Reward Function
+reward_fn = create_sql_reward_fn(sqltester)
 
-## Code Availability
+# 2. Define Batch Inference Functions
+tuning_model_fn = create_model_batch_fn(model="qwen3-8b", ...)
+tuner_model_fn = create_model_batch_fn(model="deepseek-v3", ...)
 
-We are currently organizing and refactoring the codebase.  
-The full implementation will be released soon.
+# 3. Initialize Tuner
+tuner = PromptTuner(
+    reward_fn=reward_fn,
+    tuning_model_batch_fn=tuning_model_fn,
+    tuner_model_batch_fn=tuner_model_fn,
+    knowledge_base_path="knowledge_base.jsonl"
+)
+
+# 4. Start Training
+tuner.train(train_data_path="train.jsonl", num_epochs=1)
+```
+
+### 2. Web Navigation Agent (`examples/example_mind2web.py`)
+```python
+from mnl import PromptTuner
+from examples.utils.rewards import create_mind2web_reward_fn
+
+# Uses an LLM Judge as a reward function for self-evolution
+reward_fn = create_mind2web_reward_fn(tuner_model_batch_fn)
+
+tuner = PromptTuner(
+    reward_fn=reward_fn,
+    tuning_model_batch_fn=tuning_model_batch_fn,
+    tuner_model_batch_fn=tuner_model_batch_fn,
+    knowledge_base_path="web_agent_kb.jsonl"
+)
+
+tuner.train(train_data_path="mind2web_train.jsonl", num_epochs=1)
+```
+
+---
+
+## 🔧 Custom Reward Function (`reward_fn`)
+
+The evolution process of MNL relies on a `reward_fn` to quantify model performance. This function acts as the objective function for prompt optimization, determining whether a distilled "mistake note" actually improves the agent's behavior. During each iteration, the `PromptTuner` compares responses from the updated memory against the baseline; an update is accepted only if the `reward_fn` indicates a net performance gain.
+
+### Interface Specification
+The reward function should follow this signature:
+
+```python
+def reward_fn(question: str, answer1: str, answer2: str, standard_answer: str) -> List[float]:
+    """
+    Compare the quality of two answers.
+    
+    Args:
+        question: The input query or task description.
+        answer1: The model's response under the updated prompt (or candidate 1).
+        answer2: The model's response under the baseline prompt (or candidate 2).
+        standard_answer: The ground-truth answer or a reference.
+        
+    Returns:
+        [1.0, 0.0]: If answer1 is better than answer2.
+        [0.0, 1.0]: If answer2 is better than answer1.
+        [0.5, 0.5]: If both answers are of equal quality (tie).
+    """
+```
+
+### Task Examples
+
+#### 1. Mathematical Reasoning (Exact Match)
+Suitable for tasks with clear-cut answers like GSM8K or AIME.
+
+```python
+def math_reward_fn(question, answer1, answer2, standard_answer):
+    # Extract final numerical values from model responses
+    a1 = extract_number(answer1)
+    a2 = extract_number(answer2)
+    std = extract_number(standard_answer)
+    
+    correct1 = (a1 == std)
+    correct2 = (a2 == std)
+    
+    if correct1 and not correct2: return [1.0, 0.0]
+    if not correct1 and correct2: return [0.0, 1.0]
+    return [0.5, 0.5]
+```
+
+#### 2. Code/SQL (Execution-based)
+Suitable for Text-to-SQL or programming tasks, where correctness is judged by comparing execution results.
+
+```python
+def sql_reward_fn(question, answer1, answer2, standard_answer):
+    # Execute SQL and compare result sets
+    res1 = db_engine.execute(extract_sql(answer1))
+    res2 = db_engine.execute(extract_sql(answer2))
+    res_std = db_engine.execute(standard_answer)
+    
+    correct1 = (res1 == res_std)
+    correct2 = (res2 == res_std)
+    
+    if correct1 and not correct2: return [1.0, 0.0]
+    if not correct1 and correct2: return [0.0, 1.0]
+    return [0.5, 0.5]
+```
+
+#### 3. Open-ended Tasks (LLM-as-a-Judge)
+When ground truth is unavailable, a stronger model (e.g., DeepSeek-V3 or GPT-4o) can act as a judge for self-evolution.
+
+```python
+def judge_reward_fn(question, answer1, answer2, standard_answer):
+    judge_prompt = f"Question: {question}\nAnswer A: {answer1}\nAnswer B: {answer2}\nWhich one is better?"
+    response = tuner_model.generate(judge_prompt)
+    
+    if "Answer A is better" in response:
+        return [1.0, 0.0]
+    elif "Answer B is better" in response:
+        return [0.0, 1.0]
+    return [0.5, 0.5]
+```
+
+---
+
+## 📂 Project Structure
+- `mnl/`: Core framework implementation (Tuner, Memory, Knowledge Base).
+- `examples/`: Task-specific scripts for SQL, Web Agent, etc.
+- `papers/`: LaTeX source, figures, and full text of the MNL paper.
+- `resources/`: Dataset files and database schemas.
+
+---
+
+## 📜 Citation
+If you find this work useful, please cite our paper:
+```bibtex
+@misc{su2025mistakenotebooklearningselective,
+      title={Mistake Notebook Learning: Selective Batch-Wise Context Optimization for In-Context Learning}, 
+      author={Xuanbo Su and Yingfang Zhang and Hao Luo and Xiaoteng Liu and Leo Huang},
+      year={2025},
+      eprint={2512.11485},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2512.11485}, 
+}
+```
+
