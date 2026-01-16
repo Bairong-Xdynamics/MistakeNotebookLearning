@@ -221,10 +221,10 @@ def judge_reward_fn(question, answer1, answer2, standard_answer):
 ## 📜 Citation
 If you find this work useful, please cite our paper:
 ```bibtex
-@misc{su2025mistakenotebooklearningselective,
-      title={Mistake Notebook Learning: Selective Batch-Wise Context Optimization for In-Context Learning}, 
+@misc{su2026mistakenotebooklearningbatchclustered,
+      title={Mistake Notebook Learning: Batch-Clustered Failures for Training-Free Agent Adaptation}, 
       author={Xuanbo Su and Yingfang Zhang and Hao Luo and Xiaoteng Liu and Leo Huang},
-      year={2025},
+      year={2026},
       eprint={2512.11485},
       archivePrefix={arXiv},
       primaryClass={cs.CL},
