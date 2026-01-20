@@ -1,0 +1,1 @@
+# libs package for embedded AppWorld dependencies

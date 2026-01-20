@@ -307,3 +307,105 @@ Respond with exactly ONE of the following lines, followed by your reasoning:
         else:
             return [0.5, 0.5]
     return mind2web_reward_fn
+
+
+
+def create_appworld_reward_fn(tuner_model_batch_fn):
+    APPWORLD_JUDGE_PROMPT = """You are an expert Judge for an AI Agent execution log.
+Your goal is to determine if the Agent successfully completed the user's task based on the provided execution log.
+
+**Input Data:**
+1. Task Question: "{question}"
+2. Execution Log (JSON format):
+<<<EXECUTION_LOG_START>>>
+{trajectory}
+<<<EXECUTION_LOG_END>>>
+
+**Judgment Criteria:**
+- **SUCCESS**: The agent found the requested information, performed the requested action, or provided the correct answer in the final turn. The code executed without fatal errors.
+- **FAILURE**: The agent encountered a Python exception that stopped progress, got stuck in a loop, failed to call the correct API, authorized incorrectly, or the log ends abruptly without an answer.
+
+**Output Format:**
+You must output a single JSON object with the following structure:
+{{
+  "reasoning": "Brief analysis of why it succeeded or failed (max 50 words).",
+  "is_success": true or false
+}}
+"""
+    def _parse_judge_result(text):
+        """Extract boolean success status from JSON output."""
+        try:
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if match:
+                res = json.loads(match.group(0))
+                return str(res.get("is_success", "")).lower() == "true"
+        except:
+            pass
+        return False
+                
+    def _prepare_prompt(question, traj):
+        if not traj: traj = ""
+        
+
+        clean_traj = traj.replace("<<<EVAL_RESULT: SUCCESS>>>", "") \
+                        .replace("<<<EVAL_RESULT: FAILURE>>>", "") \
+                        .strip()
+        
+
+        MAX_CHARS = 25000
+        if len(clean_traj) > MAX_CHARS:
+            half = MAX_CHARS // 2
+            clean_traj = f"{clean_traj[:half]}\n\n... [TRUNCATED] ...\n\n{clean_traj[-half:]}"
+        
+
+        system_message = "You are a logic consistency evaluator."
+        user_message = APPWORLD_JUDGE_PROMPT.format(question=question, trajectory=clean_traj)
+        
+        return f"{system_message}\n\n{user_message}"
+
+    def appworld_reward_fn(question, answer1, answer2, standard_answer):
+        SUCCESS_TAG = "<<<EVAL_RESULT: SUCCESS>>>"
+
+        # Logic 1: Ground Truth Mode
+        # answer2 is a status flag (strictly equals SUCCESS_TAG).
+        if answer2 and answer2.strip() == SUCCESS_TAG:
+            is_success_1 = SUCCESS_TAG in answer1
+            return [0.5, 0.5] if is_success_1 else [0.0, 1.0]
+
+        # Logic 2: LLM Judge Mode (Training/Comparison)
+        # answer2 is either empty (single) or a full trajectory (pairwise).
+        eval_queue = [] 
+        
+        # Prepare answer1
+        eval_queue.append((1, _prepare_prompt(question, answer1)))
+        
+        # Prepare answer2 (if valid trajectory)
+        if answer2:
+            eval_queue.append((2, _prepare_prompt(question, answer2)))
+
+        # Batch inference
+        s1, s2 = False, False
+
+        responses = tuner_model_batch_fn(
+            prompts=[item[1] for item in eval_queue], 
+            system_prompts=None,                        
+            temp=None,                                 
+            max_toks=None                           
+        )
+        for (idx, _), resp in zip(eval_queue, responses):
+            is_succ = _parse_judge_result(resp)
+            if idx == 1: s1 = is_succ
+            elif idx == 2: s2 = is_succ
+
+
+        # Calculate Final Scores
+        if not answer2:
+            # Single answer mode
+            return [0.5, 0.5] if s1 else [0.0, 1.0]
+        else:
+            # Pairwise comparison mode
+            if s1 and not s2: return [1.0, 0.0]
+            elif not s1 and s2: return [0.0, 1.0]
+            else: return [0.5, 0.5]
+
+    return appworld_reward_fn

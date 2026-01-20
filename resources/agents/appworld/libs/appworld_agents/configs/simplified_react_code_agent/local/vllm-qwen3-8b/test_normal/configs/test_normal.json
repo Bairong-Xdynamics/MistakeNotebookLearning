@@ -1,0 +1,70 @@
+{
+    "config": {
+        "agent": {
+            "appworld_config": {
+                "raise_on_extra_parameters": true,
+                "random_seed": 100
+            },
+            "ignore_multiple_calls": true,
+            "log_lm_calls": true,
+            "logger_config": {
+                "color": true,
+                "verbose": true
+            },
+            "max_output_length": null,
+            "max_prompt_length": null,
+            "max_steps": 50,
+            "model_config": {
+                "api_key_env_name": "OPENAI_API_KEY",
+                "api_type": "chat_completions",
+                "base_url": "http://localhost:4390/v1",
+                "client_name": "openai",
+                "cost_per_token": {
+                    "input_cache_hit": 0,
+                    "input_cache_miss": 0,
+                    "input_cache_write": 0,
+                    "output": 0
+                },
+                "drop_reasoning_content": false,
+                "extra_body": {
+                    "chat_template_kwargs": {
+                        "enable_thinking": false
+                    }
+                },
+                "max_completion_tokens": 3000,
+                "max_retries": 100,
+                "name": "/data2/models/Qwen3-8B",
+                "retry_after_n_seconds": 15,
+                "seed": 100,
+                "temperature": 0,
+                "use_cache": false
+            },
+            "prompt_file_path": "/data1/yingfang.zhang/workspace/git/appworld/experiments/prompts/react_code_agent/instructions.txt",
+            "skip_if_finished": true,
+            "type": "simplified_react_code_agent",
+            "usage_tracker_config": {
+                "max_cost_overall": 1000,
+                "max_cost_per_task": 10,
+                "max_output_tokens_per_task": 100000
+            }
+        },
+        "dataset": "test_normal",
+        "model_server": {
+            "enabled": false
+        }
+    },
+    "metadata": {
+        "agent": {
+            "file_name": "simplified_react_code_agent",
+            "humanized_name": "ReAct Code Agent"
+        },
+        "model": {
+            "creator": "local",
+            "file_name": "vllm-qwen3-8b",
+            "humanized_name": "Vllm Qwen3 8B",
+            "precise_name": "/data2/models/Qwen3-8B",
+            "provider": "vllm"
+        }
+    },
+    "type": "simplified"
+}
