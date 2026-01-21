@@ -51,9 +51,11 @@ MNL achieves competitive results across multiple benchmarks while maintaining a 
 | **Web Agent** | Mind2Web | Step Acc (%)| 11.5% | **15.6%** | +4.1% |
 | **Tool Agent** | AppWorld | Task Success | 12.5% | **14.3%** | +1.8% |
 
-*Results based on Qwen3-8B. MNL also demonstrates strong compatibility with test-time scaling (TTS) and think-enabled models.*
+*Results based on Qwen3-8B. MNL also demonstrates strong compatibility with test-time scaling (TTS) and think-enabled models. you can find more details in paper*
+ **[Paper](https://arxiv.org/abs/2512.11485v3)**
 
 ---
+
 
 ## 🛠 Usage Examples
 
