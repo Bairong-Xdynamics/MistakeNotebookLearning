@@ -1,7 +1,7 @@
 # Mistake Notebook Learning (MNL): Batch-Clustered Failures for Training-Free Agent Adaptation
 
 🎉 **Congratulations**!
-This work has been accepted for publication as a Findings paper at **ACL 2026**!
+This work has been accepted for publication as a Findings paper at **ACL 2026** **[Paper](https://arxiv.org/abs/2512.11485v3)**!
 
 Mistake Notebook Learning (MNL) is a novel, training-free memory framework that enables Large Language Model (LLM) agents to systematically learn from their mistakes. Instead of updating model weights, MNL distills shared error patterns from batch-clustered failures into structured "mistake notes." These notes are stored in an external memory and retrieved at test time to steer agents away from known pitfalls, enabling continuous improvement with minimal computational overhead.
 
